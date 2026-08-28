@@ -47,10 +47,15 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 @app.on_event("startup")
 def on_startup():
-    try:
-        init_db()
-    except Exception as e:
-        print(f"Startup DB init error: {e}")
+    import threading
+    def background_init():
+        try:
+            init_db()
+        except Exception as e:
+            print(f"Startup DB init error: {e}")
+    
+    # Run DB init in background so Uvicorn binds to port immediately
+    threading.Thread(target=background_init, daemon=True).start()
 
 # Include Routers
 app.include_router(auth_router, prefix=settings.API_V1_STR)

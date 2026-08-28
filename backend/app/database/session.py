@@ -15,7 +15,6 @@ def normalize_database_url(url: str) -> str:
     m = re.match(r'^(postgresql(?:\+[a-z0-9]+)?://)([^:]+):(.*)@([^@/:]+)(?::(\d+))?(/.*)?$', url)
     if m:
         scheme, user, raw_pass, host, port, path = m.groups()
-        # If password contains '@' or needs encoding
         encoded_pass = urllib.parse.quote_plus(raw_pass)
         port_str = f":{port}" if port else ""
         path_str = path or ""
@@ -28,6 +27,9 @@ db_url = normalize_database_url(settings.DATABASE_URL)
 connect_args = {}
 if db_url.startswith("sqlite"):
     connect_args = {"check_same_thread": False}
+else:
+    # Set a 10s TCP connection timeout to avoid hanging startup
+    connect_args = {"connect_timeout": 10}
 
 engine = create_engine(
     db_url,
