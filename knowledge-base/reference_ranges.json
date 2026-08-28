@@ -1,0 +1,51 @@
+{
+  "Hemoglobin": {
+    "unit": "g/dL",
+    "reference_min": 13.0,
+    "reference_max": 17.0,
+    "category": "Hematology",
+    "description": "Measures the oxygen-carrying protein in red blood cells."
+  },
+  "Glucose": {
+    "unit": "mg/dL",
+    "reference_min": 70.0,
+    "reference_max": 99.0,
+    "category": "Metabolic",
+    "description": "Fasting blood sugar level used to evaluate glucose metabolism."
+  },
+  "Vitamin D": {
+    "unit": "ng/mL",
+    "reference_min": 30.0,
+    "reference_max": 100.0,
+    "category": "Vitamins",
+    "description": "Essential vitamin for bone health and immune regulation."
+  },
+  "Cholesterol": {
+    "unit": "mg/dL",
+    "reference_min": 125.0,
+    "reference_max": 200.0,
+    "category": "Lipids",
+    "description": "Total serum cholesterol level evaluating cardiovascular risk."
+  },
+  "TSH": {
+    "unit": "mIU/L",
+    "reference_min": 0.4,
+    "reference_max": 4.0,
+    "category": "Endocrinology",
+    "description": "Thyroid-stimulating hormone regulating thyroid function."
+  },
+  "WBC": {
+    "unit": "x10^3/uL",
+    "reference_min": 4.5,
+    "reference_max": 11.0,
+    "category": "Hematology",
+    "description": "White blood cell count measuring immune system activity."
+  },
+  "Platelets": {
+    "unit": "x10^3/uL",
+    "reference_min": 150.0,
+    "reference_max": 450.0,
+    "category": "Hematology",
+    "description": "Cell fragments involved in blood clotting and hemostasis."
+  }
+}

@@ -1,0 +1,29 @@
+# Node / Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/.env
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# Python / Backend
+backend/__pycache__/
+backend/*/__pycache__/
+backend/*/*/__pycache__/
+backend/*/*/*/__pycache__/
+backend/venv/
+backend/.venv/
+backend/env/
+backend/*.pyc
+backend/.pytest_cache/
+backend/uploads/
+
+# Environment Files & IDEs
+.env
+.vscode/
+.idea/
+.DS_Store
+*.log
