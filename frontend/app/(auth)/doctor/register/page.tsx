@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Stethoscope, Lock, Mail, Phone, Award, ArrowRight } from 'lucide-react';
+import { Stethoscope, Lock, Mail, Phone, Award, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/api';
 
 export default function DoctorRegisterPage() {
@@ -11,6 +11,7 @@ export default function DoctorRegisterPage() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [specialization, setSpecialization] = useState('General Medicine');
   const [qualification, setQualification] = useState('MBBS, MD');
   const [phone, setPhone] = useState('');

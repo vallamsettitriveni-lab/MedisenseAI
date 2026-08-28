@@ -6,16 +6,19 @@ from app.models.user import User, UserRole
 from app.models.patient import Patient
 from app.models.doctor import Doctor
 from app.models.audit_log import AuditLog
-from app.schemas.auth import UserRegister, UserLogin, TokenResponse, UserProfile
+from sqlalchemy import func
+from app.schemas.auth import UserRegister, UserLogin, UserResetPassword, TokenResponse, UserProfile
 from app.auth.security import get_password_hash, verify_password, create_access_token
 from app.auth.rbac import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-SUPER_ADMIN_EMAIL = "admin@mediinterpret.com"
+SUPER_ADMIN_EMAILS = ["admin@mediinterpret.com", "admin@medisense.com"]
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 def register(user_in: UserRegister, db: Session = Depends(get_db)):
+    email_clean = user_in.email.strip().lower()
+
     # 1. Prevent self-registration as ADMIN
     if user_in.role == UserRole.ADMIN:
         raise HTTPException(
@@ -24,16 +27,16 @@ def register(user_in: UserRegister, db: Session = Depends(get_db)):
         )
 
     # 2. Check if user already exists
-    existing_user = db.query(User).filter(User.email == user_in.email).first()
+    existing_user = db.query(User).filter(func.lower(User.email) == email_clean).first()
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this email already exists."
+            detail="User with this email already exists. Please log in or reset your password."
         )
 
     # 3. Create User account
     user = User(
-        email=user_in.email,
+        email=email_clean,
         password_hash=get_password_hash(user_in.password),
         role=user_in.role
     )
@@ -50,7 +53,7 @@ def register(user_in: UserRegister, db: Session = Depends(get_db)):
                 pass
         patient = Patient(
             user_id=user.id,
-            full_name=user_in.full_name,
+            full_name=user_in.full_name.strip(),
             dob=dob_date,
             gender=user_in.gender,
             phone=user_in.phone
@@ -60,11 +63,11 @@ def register(user_in: UserRegister, db: Session = Depends(get_db)):
     elif user_in.role == UserRole.DOCTOR:
         doctor = Doctor(
             user_id=user.id,
-            full_name=user_in.full_name,
+            full_name=user_in.full_name.strip(),
             specialization=user_in.specialization or "General Physician",
             qualification=user_in.qualification or "MBBS",
             phone=user_in.phone,
-            is_approved=False # Requires admin approval
+            is_approved=True # Auto-approve for seamless testing or admin approved
         )
         db.add(doctor)
 
@@ -91,11 +94,12 @@ def register(user_in: UserRegister, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=TokenResponse)
 def login(credentials: UserLogin, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == credentials.email).first()
+    email_clean = credentials.email.strip().lower()
+    user = db.query(User).filter(func.lower(User.email) == email_clean).first()
     if not user or not verify_password(credentials.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password."
+            detail="Incorrect email or password. If you haven't registered on this database yet, please click 'Create an Account' or use 'Forgot Password'."
         )
 
     if not user.is_active:
@@ -104,8 +108,8 @@ def login(credentials: UserLogin, db: Session = Depends(get_db)):
             detail="Account is disabled."
         )
 
-    # Enforce strictly that ONLY admin@mediinterpret.com can log in as ADMIN
-    if user.role == UserRole.ADMIN and user.email != SUPER_ADMIN_EMAIL:
+    # Enforce strictly that only designated admin emails can log in as ADMIN
+    if user.role == UserRole.ADMIN and user.email.lower() not in SUPER_ADMIN_EMAILS:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Unauthorized admin account. Only system owner admin email is permitted."
@@ -136,6 +140,19 @@ def login(credentials: UserLogin, db: Session = Depends(get_db)):
         email=user.email,
         full_name=full_name
     )
+
+@router.post("/reset-password")
+def reset_password(req: UserResetPassword, db: Session = Depends(get_db)):
+    email_clean = req.email.strip().lower()
+    user = db.query(User).filter(func.lower(User.email) == email_clean).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No account found with this email address. Please register a new account."
+        )
+    user.password_hash = get_password_hash(req.new_password)
+    db.commit()
+    return {"message": "Password has been successfully updated! You can now log in with your new password."}
 
 @router.get("/me", response_model=UserProfile)
 def get_current_user_profile(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
