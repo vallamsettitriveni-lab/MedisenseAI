@@ -20,6 +20,7 @@ import {
   Phone
 } from 'lucide-react';
 import Navbar from '@/components/shared/Navbar';
+import { API_BASE_URL } from '@/lib/api';
 
 export default function DoctorDashboard() {
   const router = useRouter();
@@ -78,7 +79,7 @@ export default function DoctorDashboard() {
 
   const fetchProfile = async (authToken: string) => {
     try {
-      const res = await fetch('http://localhost:8000/api/v1/auth/me', {
+      const res = await fetch(`${API_BASE_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${authToken}` },
       });
       if (res.ok) {
@@ -100,7 +101,7 @@ export default function DoctorDashboard() {
   const fetchAppointments = async (authToken?: string) => {
     const token = authToken || localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:8000/api/v1/appointments/', {
+      const res = await fetch(`${API_BASE_URL}/appointments/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -114,7 +115,7 @@ export default function DoctorDashboard() {
   const fetchPatients = async (authToken?: string) => {
     const token = authToken || localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:8000/api/v1/patients/', {
+      const res = await fetch(`${API_BASE_URL}/patients/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -128,7 +129,7 @@ export default function DoctorDashboard() {
   const handleUpdateStatus = async (apptId: string, status: string) => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/appointments/${apptId}/status`, {
+      const res = await fetch(`${API_BASE_URL}/appointments/${apptId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -148,7 +149,7 @@ export default function DoctorDashboard() {
     e.preventDefault();
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:8000/api/v1/appointments/availability', {
+      const res = await fetch(`${API_BASE_URL}/appointments/availability`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -25,6 +25,7 @@ import {
   Award
 } from 'lucide-react';
 import Navbar from '@/components/shared/Navbar';
+import { API_BASE_URL } from '@/lib/api';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -82,7 +83,7 @@ export default function AdminDashboard() {
   const fetchPatients = async (authToken?: string) => {
     const token = authToken || localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:8000/api/v1/patients/', {
+      const res = await fetch(`${API_BASE_URL}/patients/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -96,7 +97,7 @@ export default function AdminDashboard() {
   const fetchAppointments = async (authToken?: string) => {
     const token = authToken || localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:8000/api/v1/appointments/', {
+      const res = await fetch(`${API_BASE_URL}/appointments/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -109,7 +110,7 @@ export default function AdminDashboard() {
 
   const fetchDoctors = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/v1/doctors/?only_approved=false');
+      const res = await fetch(`${API_BASE_URL}/doctors/?only_approved=false`);
       if (res.ok) {
         setDoctors(await res.json());
       }
@@ -121,7 +122,7 @@ export default function AdminDashboard() {
   const fetchAuditLogs = async (authToken?: string) => {
     const token = authToken || localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:8000/api/v1/admin/audit-logs', {
+      const res = await fetch(`${API_BASE_URL}/admin/audit-logs`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -136,7 +137,7 @@ export default function AdminDashboard() {
   const handleToggleApproval = async (doctorId: string, isApproved: boolean) => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/admin/doctors/${doctorId}/approve`, {
+      const res = await fetch(`${API_BASE_URL}/admin/doctors/${doctorId}/approve`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -162,7 +163,7 @@ export default function AdminDashboard() {
 
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/admin/appointments/${apptId}/assign-doctor`, {
+      const res = await fetch(`${API_BASE_URL}/admin/appointments/${apptId}/assign-doctor`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -200,7 +201,7 @@ export default function AdminDashboard() {
     const token = localStorage.getItem('token');
     try {
       const res = await fetch(
-        `http://localhost:8000/api/v1/admin/knowledge/upload?title=${encodeURIComponent(docTitle)}&source=${encodeURIComponent(docSource)}`,
+        `${API_BASE_URL}/admin/knowledge/upload?title=${encodeURIComponent(docTitle)}&source=${encodeURIComponent(docSource)}`,
         {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },

@@ -4,10 +4,11 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Shield, Lock, Mail, ArrowRight, KeyRound } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/api';
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('admin@mediinterpret.com');
+  const [email, setEmail] = useState('admin@medisense.com');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -17,15 +18,15 @@ export default function AdminLoginPage() {
     setLoading(true);
     setError('');
 
-    // Extra frontend check: only admin@mediinterpret.com is accepted for admin login
-    if (email !== 'admin@mediinterpret.com') {
+    // Extra frontend check: only admin@medisense.com or admin@mediinterpret.com is accepted
+    if (email !== 'admin@medisense.com' && email !== 'admin@mediinterpret.com') {
       setError('Invalid Admin credentials. Access restricted to authorized system administrator.');
       setLoading(false);
       return;
     }
 
     try {
-      const res = await fetch('http://localhost:8000/api/v1/auth/login', {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),

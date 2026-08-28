@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import LabTrendChart from '@/components/charts/LabTrendChart';
 import Navbar from '@/components/shared/Navbar';
+import { API_BASE_URL } from '@/lib/api';
 
 export default function PatientDashboard() {
   const router = useRouter();
@@ -125,7 +126,7 @@ export default function PatientDashboard() {
   const fetchPatientProfile = async (authToken?: string) => {
     const token = authToken || localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:8000/api/v1/patients/me', {
+      const res = await fetch(`${API_BASE_URL}/patients/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -152,7 +153,7 @@ export default function PatientDashboard() {
     setProfileSuccessMsg('');
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:8000/api/v1/patients/me', {
+      const res = await fetch(`${API_BASE_URL}/patients/me`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -188,7 +189,7 @@ export default function PatientDashboard() {
   const fetchReports = async (authToken?: string) => {
     const token = authToken || localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:8000/api/v1/reports/', {
+      const res = await fetch(`${API_BASE_URL}/reports/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -207,7 +208,7 @@ export default function PatientDashboard() {
   const fetchComparison = async (reportId: string) => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/reports/compare/items?new_report_id=${reportId}`, {
+      const res = await fetch(`${API_BASE_URL}/reports/compare/items?new_report_id=${reportId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -222,7 +223,7 @@ export default function PatientDashboard() {
   const fetchTrendChart = async (testName: string) => {
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/reports/trends/chart?test_name=${encodeURIComponent(testName)}`, {
+      const res = await fetch(`${API_BASE_URL}/reports/trends/chart?test_name=${encodeURIComponent(testName)}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -236,7 +237,7 @@ export default function PatientDashboard() {
 
   const fetchDoctors = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/v1/doctors/');
+      const res = await fetch(`${API_BASE_URL}/doctors/`);
       if (res.ok) {
         setDoctors(await res.json());
       }
@@ -248,7 +249,7 @@ export default function PatientDashboard() {
   const fetchAppointments = async (authToken?: string) => {
     const token = authToken || localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:8000/api/v1/appointments/', {
+      const res = await fetch(`${API_BASE_URL}/appointments/`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -269,7 +270,7 @@ export default function PatientDashboard() {
     setUploading(true);
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:8000/api/v1/reports/upload', {
+      const res = await fetch(`${API_BASE_URL}/reports/upload`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -302,7 +303,7 @@ export default function PatientDashboard() {
     setDeletingId(reportId);
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/reports/${reportId}`, {
+      const res = await fetch(`${API_BASE_URL}/reports/${reportId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -333,7 +334,7 @@ export default function PatientDashboard() {
   const handleFetchSlots = async (docId: string, dateStr: string) => {
     if (!docId || !dateStr) return;
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/appointments/slots?doctor_id=${docId}&date_str=${dateStr}`);
+      const res = await fetch(`${API_BASE_URL}/appointments/slots?doctor_id=${docId}&date_str=${dateStr}`);
       if (res.ok) {
         setAvailableSlots(await res.json());
       }
@@ -349,7 +350,7 @@ export default function PatientDashboard() {
 
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch('http://localhost:8000/api/v1/appointments/book', {
+      const res = await fetch(`${API_BASE_URL}/appointments/book`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

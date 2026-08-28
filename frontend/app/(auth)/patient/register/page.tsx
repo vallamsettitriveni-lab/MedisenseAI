@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { User, Lock, Mail, Phone, Calendar, ArrowRight } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/api';
 
 export default function PatientRegisterPage() {
   const router = useRouter();
@@ -37,7 +38,7 @@ export default function PatientRegisterPage() {
     setError('');
 
     try {
-      const res = await fetch('http://localhost:8000/api/v1/auth/register', {
+      const res = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
