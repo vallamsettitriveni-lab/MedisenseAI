@@ -119,3 +119,9 @@ def get_audit_logs(
     db: Session = Depends(get_db)
 ):
     return db.query(AuditLog).order_by(AuditLog.timestamp.desc()).limit(limit).all()
+
+@router.post("/seed")
+def seed_database_endpoint(db: Session = Depends(get_db)):
+    from app.database.init_db import init_db
+    init_db()
+    return {"message": "Database initialized and seeded with 20 specialist doctors and admin credentials successfully!"}

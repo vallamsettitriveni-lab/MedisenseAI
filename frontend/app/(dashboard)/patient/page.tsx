@@ -293,6 +293,32 @@ export default function PatientDashboard() {
     }
   };
 
+  // Load Demonstration Sample Lab Report (CBC & Lipids)
+  const handleLoadSampleReport = async () => {
+    setUploading(true);
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${API_BASE_URL}/reports/sample`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        const newReport = await res.json();
+        setSelectedReport(newReport);
+        setReports((prev) => [newReport, ...prev.filter((r) => r.id !== newReport.id)]);
+        fetchComparison(newReport.id);
+        fetchTrendChart(selectedTest);
+      } else {
+        alert('Could not load sample report.');
+      }
+    } catch (err) {
+      console.error('Sample report error:', err);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   // Delete an uploaded report
   const handleDeleteReport = async (reportId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -477,6 +503,13 @@ export default function PatientDashboard() {
               {uploading ? 'Processing PDF...' : 'Select PDF File'}
               <input type="file" accept=".pdf" onChange={handleFileUpload} disabled={uploading} className="hidden" />
             </label>
+            <button
+              onClick={handleLoadSampleReport}
+              disabled={uploading}
+              className="w-full py-2 bg-teal-700/60 hover:bg-teal-700 text-teal-100 font-semibold text-xs rounded-xl border border-teal-500/30 transition flex items-center justify-center gap-1.5"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-amber-300" /> {uploading ? 'Loading...' : 'Load Demo Lab Report'}
+            </button>
           </div>
         </aside>
 
@@ -489,12 +522,25 @@ export default function PatientDashboard() {
               <h2 className="text-2xl font-extrabold text-slate-900">Medical Reports & AI Analysis</h2>
 
               {reports.length === 0 ? (
-                <div className="bg-white p-12 text-center rounded-2xl border border-slate-200 shadow-sm space-y-3">
-                  <FileText className="h-10 w-10 text-slate-300 mx-auto" />
-                  <h3 className="font-bold text-slate-700 text-lg">No medical reports uploaded yet</h3>
+                <div className="bg-white p-12 text-center rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                  <FileText className="h-12 w-12 text-teal-600/60 mx-auto" />
+                  <h3 className="font-bold text-slate-800 text-lg">No medical reports uploaded yet</h3>
                   <p className="text-slate-500 text-sm max-w-md mx-auto">
-                    Upload your blood test PDF report using the sidebar button to extract structured laboratory values and AI summaries.
+                    Upload your blood test PDF report using the button below or load a demo comprehensive metabolic & lipid panel to test instant AI interpretation.
                   </p>
+                  <div className="flex items-center justify-center gap-3 pt-2">
+                    <label className="px-5 py-2.5 bg-teal-700 hover:bg-teal-800 text-white font-bold text-sm rounded-xl cursor-pointer shadow-sm transition inline-flex items-center gap-2">
+                      <Upload className="h-4 w-4" /> Select PDF
+                      <input type="file" accept=".pdf" onChange={handleFileUpload} disabled={uploading} className="hidden" />
+                    </label>
+                    <button
+                      onClick={handleLoadSampleReport}
+                      disabled={uploading}
+                      className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl transition inline-flex items-center gap-2"
+                    >
+                      <Sparkles className="h-4 w-4 text-amber-500" /> Load Demo Report
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-6">

@@ -22,7 +22,8 @@ import {
   UserCheck,
   UserPlus,
   UserX,
-  Award
+  Award,
+  RefreshCw
 } from 'lucide-react';
 import Navbar from '@/components/shared/Navbar';
 import { API_BASE_URL } from '@/lib/api';
@@ -59,6 +60,31 @@ export default function AdminDashboard() {
   const [docSource, setDocSource] = useState('Clinical Protocol');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [ingesting, setIngesting] = useState(false);
+  const [seeding, setSeeding] = useState(false);
+
+  const handleTriggerSeed = async () => {
+    setSeeding(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/seed`, { method: 'POST' });
+      if (res.ok) {
+        alert('Database initialized and seeded with 20 doctors and admin accounts!');
+        await fetchDoctors();
+        const token = localStorage.getItem('token');
+        if (token) {
+          fetchPatients(token);
+          fetchAppointments(token);
+          fetchAuditLogs(token);
+        }
+      } else {
+        alert('Seeding failed. Please check server logs.');
+      }
+    } catch (e) {
+      console.error('Seed error:', e);
+      alert('Could not trigger seed.');
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   // Strict Authentication Guard (ADMIN role only)
   useEffect(() => {
@@ -304,8 +330,18 @@ export default function AdminDashboard() {
               </p>
             </div>
           </div>
-          <div className="hidden sm:block text-right text-xs text-indigo-300">
-            <span>Super Administrator Management</span>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleTriggerSeed}
+              disabled={seeding}
+              className="px-4 py-2 bg-indigo-700/80 hover:bg-indigo-600 border border-indigo-400/40 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 text-indigo-200 ${seeding ? 'animate-spin' : ''}`} />
+              {seeding ? 'Seeding...' : '⚡ Seed Database (20 Doctors)'}
+            </button>
+            <div className="hidden sm:block text-right text-xs text-indigo-300">
+              <span>Super Administrator</span>
+            </div>
           </div>
         </div>
       </div>

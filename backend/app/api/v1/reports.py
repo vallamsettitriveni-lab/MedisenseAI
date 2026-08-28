@@ -271,3 +271,59 @@ def get_lab_trends(
         unit=unit,
         data_points=data_points
     )
+
+@router.post("/sample", response_model=ReportResponse, status_code=status.HTTP_201_CREATED)
+def create_sample_report(
+    current_user: User = Depends(require_patient),
+    db: Session = Depends(get_db)
+):
+    patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient profile not found.")
+
+    report = Report(
+        patient_id=patient.id,
+        file_name="Comprehensive_Metabolic_Panel_Sample.pdf",
+        file_url="/sample/Comprehensive_Metabolic_Panel_Sample.pdf",
+        processing_status=ReportStatus.COMPLETED,
+        report_date=datetime.utcnow()
+    )
+    db.add(report)
+    db.commit()
+    db.refresh(report)
+
+    sample_items = [
+        {"test_name": "Hemoglobin", "value": 14.2, "unit": "g/dL", "min": 13.0, "max": 17.0, "status": "NORMAL"},
+        {"test_name": "Glucose", "value": 104.0, "unit": "mg/dL", "min": 70.0, "max": 99.0, "status": "HIGH"},
+        {"test_name": "Cholesterol", "value": 215.0, "unit": "mg/dL", "min": 125.0, "max": 200.0, "status": "HIGH"},
+        {"test_name": "Vitamin D", "value": 24.5, "unit": "ng/mL", "min": 30.0, "max": 100.0, "status": "LOW"},
+        {"test_name": "WBC", "value": 6.8, "unit": "x10^3/uL", "min": 4.5, "max": 11.0, "status": "NORMAL"},
+        {"test_name": "Platelets", "value": 260.0, "unit": "x10^3/uL", "min": 150.0, "max": 450.0, "status": "NORMAL"},
+        {"test_name": "TSH", "value": 2.1, "unit": "mIU/L", "min": 0.4, "max": 4.0, "status": "NORMAL"}
+    ]
+
+    for item in sample_items:
+        db.add(LabResult(
+            report_id=report.id,
+            patient_id=patient.id,
+            test_name=item["test_name"],
+            value=item["value"],
+            unit=item["unit"],
+            reference_min=item["min"],
+            reference_max=item["max"],
+            status=item["status"]
+        ))
+
+    explanation = AIExplanation(
+        report_id=report.id,
+        patient_id=patient.id,
+        summary="Your sample Comprehensive Metabolic & Lipid Panel shows mostly healthy baseline indicators with mild elevations in Fasting Glucose (104 mg/dL) and Total Cholesterol (215 mg/dL), alongside slightly reduced Vitamin D (24.5 ng/mL).",
+        potential_causes="• Mildly elevated fasting glucose can be associated with dietary carbohydrate intake or early prediabetes.\n• Borderline cholesterol suggests review of dietary saturated fats.\n• Lower Vitamin D is common with limited sunlight exposure.",
+        dietary_guidance="• Incorporate soluble fiber (oats, legumes, flaxseeds) to support healthy cholesterol metabolism.\n• Prioritize complex whole grains, leafy greens, and lean protein.\n• Discuss Vitamin D3 supplementation (1000-2000 IU) with your healthcare provider.",
+        questions_for_doctor="• Should I consider a follow-up HbA1c test to evaluate average 3-month blood sugar control?\n• Would you recommend a lipid fraction breakdown (LDL/HDL/Triglycerides)?\n• What is the optimal daily Vitamin D3 dosage for my profile?",
+        disclaimer="MediSense AI provides educational explanations only and does NOT provide formal medical diagnoses or prescriptions. Always consult a qualified licensed physician for medical advice."
+    )
+    db.add(explanation)
+    db.commit()
+    db.refresh(report)
+    return report

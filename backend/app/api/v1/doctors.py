@@ -27,6 +27,14 @@ def list_doctors(
     only_approved: bool = True,
     db: Session = Depends(get_db)
 ):
+    # Auto-seed if database is fresh and has no doctors
+    if db.query(Doctor).count() == 0:
+        try:
+            from app.database.init_db import init_db
+            init_db()
+        except Exception as e:
+            print(f"Auto-seed error: {e}")
+
     query = db.query(Doctor)
     if only_approved:
         query = query.filter(Doctor.is_approved == True)
