@@ -330,18 +330,8 @@ export default function AdminDashboard() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleTriggerSeed}
-              disabled={seeding}
-              className="px-4 py-2 bg-indigo-700/80 hover:bg-indigo-600 border border-indigo-400/40 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
-            >
-              <RefreshCw className={`h-3.5 w-3.5 text-indigo-200 ${seeding ? 'animate-spin' : ''}`} />
-              {seeding ? 'Seeding...' : '⚡ Seed Database (20 Doctors)'}
-            </button>
-            <div className="hidden sm:block text-right text-xs text-indigo-300">
-              <span>Super Administrator</span>
-            </div>
+          <div className="hidden sm:block text-right text-xs text-indigo-300">
+            <span>Super Administrator Control</span>
           </div>
         </div>
       </div>
