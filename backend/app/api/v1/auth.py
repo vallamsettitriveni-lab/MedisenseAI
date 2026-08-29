@@ -67,7 +67,7 @@ def register(user_in: UserRegister, db: Session = Depends(get_db)):
             specialization=user_in.specialization or "General Physician",
             qualification=user_in.qualification or "MBBS",
             phone=user_in.phone,
-            is_approved=True # Auto-approve for seamless testing or admin approved
+            is_approved=False # Requires Super Admin approval
         )
         db.add(doctor)
 
@@ -114,6 +114,15 @@ def login(credentials: UserLogin, db: Session = Depends(get_db)):
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Unauthorized admin account. Only system owner admin email is permitted."
         )
+
+    # Enforce Admin Approval for Doctor accounts
+    if user.role == UserRole.DOCTOR:
+        doctor = user.doctor_profile or db.query(Doctor).filter(Doctor.user_id == user.id).first()
+        if doctor and not doctor.is_approved:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Doctor account pending verification. Please wait for Super Admin approval before accessing clinical workspace."
+            )
 
     # Retrieve profile full name
     full_name = None
