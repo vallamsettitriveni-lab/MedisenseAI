@@ -456,16 +456,43 @@ export default function DoctorDashboard() {
                         )}
                       </div>
 
-                      <div className="flex items-center gap-3">
-                        {app.status === 'APPROVED' && (
-                          <button
-                            onClick={() => handleUpdateStatus(app.id, 'COMPLETED')}
-                            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-1.5"
-                          >
-                            <CheckCircle className="h-4 w-4" /> Mark Consultation Completed
-                          </button>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {app.status === 'PENDING' && (
+                          <>
+                            <button
+                              onClick={() => handleUpdateStatus(app.id, 'APPROVED')}
+                              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-1.5"
+                            >
+                              <CheckCircle className="h-4 w-4" /> Approve & Accept Emergency Case
+                            </button>
+                            <button
+                              onClick={() => handleUpdateStatus(app.id, 'DECLINED')}
+                              className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-sm transition"
+                            >
+                              Decline
+                            </button>
+                          </>
                         )}
-                        <span className="px-3 py-1 bg-slate-100 text-slate-700 text-xs font-bold rounded-full">
+                        {app.status === 'APPROVED' && (
+                          <div className="flex items-center gap-2">
+                            <span className="px-3 py-1.5 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-xl border border-emerald-300 flex items-center gap-1">
+                              <CheckCircle className="h-3.5 w-3.5" /> Approved & Accepted
+                            </span>
+                            <button
+                              onClick={() => handleUpdateStatus(app.id, 'COMPLETED')}
+                              className="px-3.5 py-2 bg-sky-700 hover:bg-sky-800 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center gap-1.5"
+                            >
+                              Mark Completed
+                            </button>
+                          </div>
+                        )}
+                        <span className={`px-3 py-1 text-xs font-bold rounded-full ${
+                          app.status === 'APPROVED'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : app.status === 'DECLINED'
+                            ? 'bg-rose-100 text-rose-800'
+                            : 'bg-amber-100 text-amber-800'
+                        }`}>
                           {app.status}
                         </span>
                       </div>

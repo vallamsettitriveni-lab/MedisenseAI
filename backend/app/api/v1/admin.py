@@ -59,22 +59,28 @@ def assign_doctor_to_appointment(
     if not appointment:
         raise HTTPException(status_code=404, detail="Appointment not found.")
 
+    if appointment.status == AppointmentStatus.APPROVED:
+        raise HTTPException(status_code=400, detail="This emergency appointment has already been approved and finalized. No further changes can be made.")
+
     doctor = db.query(Doctor).filter(Doctor.id == req.doctor_id).first()
     if not doctor:
         raise HTTPException(status_code=404, detail="Doctor not found.")
 
     appointment.doctor_id = req.doctor_id
-    if req.status:
-        try:
-            appointment.status = AppointmentStatus(req.status)
-        except ValueError:
-            pass
+    appointment.status = AppointmentStatus.PENDING # Awaiting assigned doctor approval
+
+    # Append admin assignment info to reason cleanly
+    current_reason = appointment.reason or ""
+    # Remove previous admin assignment tag if reassigning
+    import re
+    cleaned_reason = re.sub(r"\[ADMIN_ASSIGNED:[^\]]+\]", "", current_reason).strip()
+    appointment.reason = f"{cleaned_reason} [ADMIN_ASSIGNED: Dr. {doctor.full_name}]".strip()
 
     db.add(AuditLog(user_id=current_user.id, action="ADMIN_ASSIGN_DOCTOR", resource=f"Appt:{appointment.id}->Doc:{doctor.id}"))
     db.commit()
     db.refresh(appointment)
 
-    return {"message": f"Assigned doctor {doctor.full_name} to appointment successfully.", "status": appointment.status}
+    return {"message": f"Assigned doctor {doctor.full_name} to appointment successfully.", "status": appointment.status, "reason": appointment.reason}
 
 @router.post("/knowledge/upload", status_code=status.HTTP_201_CREATED)
 async def upload_knowledge_document(

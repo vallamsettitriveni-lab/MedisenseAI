@@ -662,35 +662,48 @@ export default function AdminDashboard() {
                       </div>
 
                       {/* Admin Doctor Assignment Controls */}
-                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3 max-w-xs w-full">
-                        <label className="block text-xs font-bold text-slate-700 uppercase">
-                          Assign Available Doctor:
-                        </label>
-                        <select
-                          value={assigningApptId === app.id ? selectedMatchDoctorId : ''}
-                          onChange={(e) => {
-                            setAssigningApptId(app.id);
-                            setSelectedMatchDoctorId(e.target.value);
-                          }}
-                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 shadow-sm"
-                        >
-                          <option value="">-- Choose Doctor from Schedule --</option>
-                          {doctors
-                            .filter((d) => d.is_approved)
-                            .map((doc) => (
-                              <option key={doc.id} value={doc.id}>
-                                {doc.full_name} ({doc.specialization})
-                              </option>
-                            ))}
-                        </select>
+                      {app.status === 'APPROVED' ? (
+                        <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-200 text-center max-w-xs w-full space-y-1">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-600 text-white rounded-full text-xs font-bold shadow-sm">
+                            <CheckCircle className="h-3.5 w-3.5" /> Approved & Finalized
+                          </span>
+                          <p className="text-xs text-emerald-800 font-semibold mt-1">
+                            Dr. {app.doctor_name} approved and accepted this emergency case.
+                          </p>
+                          <p className="text-[10px] text-slate-400">Locked — No further reassignment permitted</p>
+                        </div>
+                      ) : (
+                        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3 max-w-xs w-full">
+                          <label className="block text-xs font-bold text-slate-700 uppercase">
+                            Assign On-Duty Specialist:
+                          </label>
+                          <select
+                            value={assigningApptId === app.id ? selectedMatchDoctorId : ''}
+                            onChange={(e) => {
+                              setAssigningApptId(app.id);
+                              setSelectedMatchDoctorId(e.target.value);
+                            }}
+                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 shadow-sm"
+                          >
+                            <option value="">-- Choose Specialist Doctor --</option>
+                            {doctors
+                              .filter((d) => d.is_approved)
+                              .map((doc) => (
+                                <option key={doc.id} value={doc.id}>
+                                  {doc.full_name} ({doc.specialization})
+                                </option>
+                              ))}
+                          </select>
 
-                        <button
-                          onClick={() => handleAssignEmergencyDoctor(app.id)}
-                          className="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center justify-center gap-1.5"
-                        >
-                          <CheckCircle className="h-4 w-4" /> Assign Doctor & Confirm
-                        </button>
-                      </div>
+                          <button
+                            onClick={() => handleAssignEmergencyDoctor(app.id)}
+                            disabled={!selectedMatchDoctorId || assigningApptId !== app.id}
+                            className="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center justify-center gap-1.5 disabled:opacity-50"
+                          >
+                            <CheckCircle className="h-4 w-4" /> Reassign Doctor & Dispatch
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

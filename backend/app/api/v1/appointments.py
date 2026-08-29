@@ -173,12 +173,18 @@ def update_appointment_status(
         raise HTTPException(status_code=404, detail="Appointment not found.")
 
     appointment.status = status_update.status
+    doc = db.query(Doctor).filter(Doctor.id == appointment.doctor_id).first()
+
+    if status_update.status == AppointmentStatus.APPROVED and doc:
+        current_reason = appointment.reason or ""
+        if f"[APPROVED_BY: {doc.full_name}]" not in current_reason:
+            appointment.reason = f"{current_reason} [APPROVED_BY: {doc.full_name}]".strip()
+
     db.add(AuditLog(user_id=current_user.id, action=f"APPOINTMENT_{status_update.status.value}", resource=str(appointment.id)))
     db.commit()
     db.refresh(appointment)
 
     pat = db.query(Patient).filter(Patient.id == appointment.patient_id).first()
-    doc = db.query(Doctor).filter(Doctor.id == appointment.doctor_id).first()
     return AppointmentResponse(
         id=appointment.id,
         patient_id=appointment.patient_id,
