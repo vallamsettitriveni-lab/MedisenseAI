@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status,
 from sqlalchemy.orm import Session
 from app.database.session import get_db
 from app.config import settings
-from app.models import User, UserRole, Patient, Report, ReportStatus, LabResult, AIExplanation, AuditLog
+from app.models import User, UserRole, Patient, Report, ReportStatus, LabResult, LabStatus, AIExplanation, AuditLog
 from app.auth.rbac import get_current_user, require_patient
 from app.ai.ocr.parser import PDFParser
 from app.ai.extraction.extractor import LabExtractor
