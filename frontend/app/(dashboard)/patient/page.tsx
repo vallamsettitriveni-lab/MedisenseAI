@@ -759,9 +759,23 @@ startxref
                         {reports.map((rep) => (
                           <div
                             key={rep.id}
-                            onClick={() => {
+                            onClick={async () => {
                               setSelectedReport(rep);
                               fetchComparison(rep.id);
+                              if (!rep.lab_results || rep.lab_results.length === 0) {
+                                const token = localStorage.getItem('token');
+                                try {
+                                  const fresh = await fetch(`${API_BASE_URL}/reports/${rep.id}`, {
+                                    headers: { Authorization: `Bearer ${token}` }
+                                  });
+                                  if (fresh.ok) {
+                                    const freshData = await fresh.json();
+                                    setSelectedReport(freshData);
+                                    setReports((prev) => prev.map((r) => (r.id === rep.id ? freshData : r)));
+                                    fetchComparison(freshData.id);
+                                  }
+                                } catch (_) {}
+                              }
                             }}
                             className={`w-full p-3 rounded-xl border text-sm transition cursor-pointer flex items-start justify-between gap-2 group ${selectedReport?.id === rep.id
                                 ? 'border-teal-600 bg-teal-50/60 shadow-sm'
@@ -808,43 +822,56 @@ startxref
                             </span>
                           </div>
 
-                          <div className="flex-1 overflow-y-auto pr-1">
-                            <table className="w-full text-left text-sm">
-                              <thead>
-                                <tr className="border-b text-[11px] text-slate-500 uppercase">
-                                  <th className="py-2">Test Name</th>
-                                  <th className="py-2">Observed Value</th>
-                                  <th className="py-2">Ref Range</th>
-                                  <th className="py-2">Status</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y">
-                                {selectedReport.lab_results?.map((lab: any) => (
-                                  <tr key={lab.id} className="hover:bg-slate-50">
-                                    <td className="py-2.5 font-semibold text-slate-900 text-xs">{lab.test_name}</td>
-                                    <td className="py-2.5 text-slate-700 text-xs">
-                                      {lab.value} <span className="text-[10px] text-slate-400">{lab.unit}</span>
-                                    </td>
-                                    <td className="py-2.5 text-[11px] text-slate-500">
-                                      {lab.reference_min} – {lab.reference_max} {lab.unit}
-                                    </td>
-                                    <td className="py-2.5">
-                                      <span
-                                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${lab.status === 'LOW'
-                                            ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                                            : lab.status === 'HIGH'
-                                              ? 'bg-rose-100 text-rose-800 border border-rose-200'
-                                              : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                                          }`}
-                                      >
-                                        {lab.status}
-                                      </span>
-                                    </td>
+                          {(!selectedReport.lab_results || selectedReport.lab_results.length === 0) ? (
+                            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-3">
+                              <FileText className="h-10 w-10 text-slate-300 mx-auto" />
+                              <p className="text-slate-500 text-xs">No parameters extracted for this report yet.</p>
+                              <button
+                                onClick={() => fetchReports()}
+                                className="px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center gap-1.5"
+                              >
+                                <RefreshCw className="h-3.5 w-3.5" /> ⚡ Extract & Load Lab Values
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex-1 overflow-y-auto pr-1">
+                              <table className="w-full text-left text-sm">
+                                <thead>
+                                  <tr className="border-b text-[11px] text-slate-500 uppercase">
+                                    <th className="py-2">Test Name</th>
+                                    <th className="py-2">Observed Value</th>
+                                    <th className="py-2">Ref Range</th>
+                                    <th className="py-2">Status</th>
                                   </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
+                                </thead>
+                                <tbody className="divide-y">
+                                  {selectedReport.lab_results.map((lab: any) => (
+                                    <tr key={lab.id || lab.test_name} className="hover:bg-slate-50">
+                                      <td className="py-2.5 font-semibold text-slate-900 text-xs">{lab.test_name}</td>
+                                      <td className="py-2.5 text-slate-700 text-xs">
+                                        {lab.value} <span className="text-[10px] text-slate-400">{lab.unit}</span>
+                                      </td>
+                                      <td className="py-2.5 text-[11px] text-slate-500">
+                                        {lab.reference_min} – {lab.reference_max} {lab.unit}
+                                      </td>
+                                      <td className="py-2.5">
+                                        <span
+                                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${lab.status === 'LOW'
+                                              ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                                              : lab.status === 'HIGH'
+                                                ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                                                : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                            }`}
+                                        >
+                                          {lab.status}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
                         </>
                       ) : (
                         <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
