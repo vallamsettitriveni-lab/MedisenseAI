@@ -65,7 +65,7 @@ app.include_router(doctors_router, prefix=settings.API_V1_STR)
 app.include_router(patients_router, prefix=settings.API_V1_STR)
 app.include_router(admin_router, prefix=settings.API_V1_STR)
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 def root():
     return {
         "message": "Welcome to AI Health Report Interpreter API",
@@ -73,6 +73,6 @@ def root():
         "docs": "/docs"
     }
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 def health_check():
     return {"status": "ok", "version": settings.VERSION}
