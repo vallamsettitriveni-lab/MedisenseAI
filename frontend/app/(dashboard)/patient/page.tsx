@@ -1361,36 +1361,50 @@ startxref
           {/* TAB 4: REPORT COMPARISON */}
           {activeTab === 'compare' && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-extrabold text-slate-900">Old vs New Report Comparison</h2>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h2 className="text-2xl font-extrabold text-slate-900">Old vs New Report Comparison</h2>
+                  <p className="text-xs text-slate-500 mt-0.5">Biomarker delta analysis across consecutive medical diagnostic visits</p>
+                </div>
+              </div>
+
               {comparison && comparison.comparisons ? (
                 <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm">
                       <thead>
                         <tr className="border-b text-xs text-slate-500 uppercase">
-                          <th className="py-2">Test Name</th>
-                          <th className="py-2">Previous Value</th>
-                          <th className="py-2">Current Value</th>
-                          <th className="py-2">Change</th>
-                          <th className="py-2">Direction</th>
+                          <th className="py-2.5">Biomarker / Test Name</th>
+                          <th className="py-2.5">Previous Visit</th>
+                          <th className="py-2.5">Current Visit</th>
+                          <th className="py-2.5">Delta Change (Δ)</th>
+                          <th className="py-2.5">Clinical Status</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y">
                         {comparison.comparisons.map((item: any, idx: number) => (
                           <tr key={idx} className="hover:bg-slate-50">
                             <td className="py-3 font-semibold text-slate-900">{item.test_name}</td>
-                            <td className="py-3 text-slate-600">
-                              {item.previous_value !== null ? `${item.previous_value} ${item.unit}` : 'N/A'}
+                            <td className="py-3 text-slate-600 text-xs">
+                              {item.previous_value !== null ? (
+                                <span>{item.previous_value} <span className="text-[10px] text-slate-400">{item.unit}</span></span>
+                              ) : (
+                                <span className="text-slate-400 italic text-[11px]">N/A (First Recorded)</span>
+                              )}
                             </td>
-                            <td className="py-3 font-bold text-slate-900">
-                              {item.current_value} {item.unit}
+                            <td className="py-3 font-bold text-slate-900 text-xs">
+                              {item.current_value} <span className="text-[10px] text-slate-400">{item.unit}</span>
                             </td>
                             <td className="py-3 text-xs">
                               {item.absolute_change !== null ? (
                                 <span className={item.direction === 'INCREASED' ? 'text-rose-600 font-bold' : item.direction === 'DECREASED' ? 'text-emerald-600 font-bold' : 'text-slate-500'}>
-                                  {item.direction === 'INCREASED' ? '▲' : item.direction === 'DECREASED' ? '▼' : '—'} {item.absolute_change} {item.unit} ({item.percentage_change}%)
+                                  {item.direction === 'INCREASED' ? '▲' : item.direction === 'DECREASED' ? '▼' : '—'} {item.absolute_change > 0 ? `+${item.absolute_change}` : item.absolute_change} {item.unit} ({item.percentage_change > 0 ? `+${item.percentage_change}` : item.percentage_change}%)
                                 </span>
-                              ) : 'Baseline'}
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-teal-800 border border-teal-200">
+                                  🌱 Baseline (New Test)
+                                </span>
+                              )}
                             </td>
                             <td className="py-3">
                               <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
@@ -1406,7 +1420,10 @@ startxref
                   </div>
                 </div>
               ) : (
-                <p className="text-slate-500 text-sm">Select or upload at least two reports to compute delta comparison.</p>
+                <div className="p-8 bg-white rounded-2xl border border-slate-200 text-center space-y-3">
+                  <RefreshCw className="h-8 w-8 text-teal-600/50 mx-auto" />
+                  <p className="text-slate-600 text-sm font-semibold">Upload at least two medical reports to view automated delta comparisons.</p>
+                </div>
               )}
             </div>
           )}
@@ -1414,21 +1431,38 @@ startxref
           {/* TAB 5: LONGITUDINAL TRENDS */}
           {activeTab === 'trends' && (
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-extrabold text-slate-900">Historical Trend Analytics</h2>
-                <select
-                  value={selectedTest}
-                  onChange={(e) => setSelectedTest(e.target.value)}
-                  className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 shadow-sm focus:ring-2 focus:ring-teal-600"
-                >
-                  <option value="Hemoglobin">Hemoglobin</option>
-                  <option value="Glucose">Glucose</option>
-                  <option value="Vitamin D">Vitamin D</option>
-                  <option value="Cholesterol">Cholesterol</option>
-                  <option value="TSH">TSH</option>
-                  <option value="WBC">WBC</option>
-                  <option value="Platelets">Platelets</option>
-                </select>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-2xl font-extrabold text-slate-900">Historical Trend Analytics</h2>
+                  <p className="text-xs text-slate-500 mt-0.5">Chronological biomarker trajectory over time</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-600">Select Biomarker:</span>
+                  <select
+                    value={selectedTest}
+                    onChange={(e) => setSelectedTest(e.target.value)}
+                    className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 shadow-sm focus:ring-2 focus:ring-teal-600"
+                  >
+                    {Array.from(new Set([
+                      'Hemoglobin',
+                      'RBC',
+                      'Glucose',
+                      'Cholesterol',
+                      'Vitamin D',
+                      'TSH',
+                      'WBC',
+                      'Platelets',
+                      'Creatinine',
+                      'HbA1c',
+                      'Calcium',
+                      ...reports.flatMap((r) => (r.lab_results || []).map((l: any) => l.test_name))
+                    ])).map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <LabTrendChart testName={selectedTest} data={trendData} />
