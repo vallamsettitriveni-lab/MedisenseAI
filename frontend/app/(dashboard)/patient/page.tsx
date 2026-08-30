@@ -934,10 +934,20 @@ startxref
 
               {/* Real-time Emergency Cases Status Tracker */}
               <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                  <ShieldCheck className="h-5 w-5 text-teal-600" />
-                  Your Active Emergency Cases & Live Doctor Status ({emergencyAppointments.length})
-                </h3>
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <ShieldCheck className="h-5 w-5 text-teal-600" />
+                    Your Active Emergency Cases & Live Doctor Status ({emergencyAppointments.length})
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => fetchAppointments()}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition"
+                    title="Refresh Live Status"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" /> Refresh Status
+                  </button>
+                </div>
 
                 {emergencyAppointments.length === 0 ? (
                   <div className="p-8 text-center bg-slate-50 rounded-2xl border border-slate-100 text-slate-500 text-xs">

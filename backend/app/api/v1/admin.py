@@ -67,14 +67,19 @@ def assign_doctor_to_appointment(
         raise HTTPException(status_code=404, detail="Doctor not found.")
 
     appointment.doctor_id = req.doctor_id
-    appointment.status = AppointmentStatus.PENDING # Awaiting assigned doctor approval
+    if req.status:
+        try:
+            appointment.status = AppointmentStatus(req.status)
+        except ValueError:
+            appointment.status = AppointmentStatus.APPROVED
+    else:
+        appointment.status = AppointmentStatus.APPROVED # Admin assignment immediately confirms appointment
 
     # Append admin assignment info to reason cleanly
     current_reason = appointment.reason or ""
-    # Remove previous admin assignment tag if reassigning
     import re
-    cleaned_reason = re.sub(r"\[ADMIN_ASSIGNED:[^\]]+\]", "", current_reason).strip()
-    appointment.reason = f"{cleaned_reason} [ADMIN_ASSIGNED: Dr. {doctor.full_name}]".strip()
+    cleaned_reason = re.sub(r"\[ADMIN_ASSIGNED:[^\]]+\]|\[APPROVED_BY:[^\]]+\]", "", current_reason).strip()
+    appointment.reason = f"{cleaned_reason} [ADMIN_ASSIGNED: Dr. {doctor.full_name}] [APPROVED_BY: Dr. {doctor.full_name}]".strip()
 
     db.add(AuditLog(user_id=current_user.id, action="ADMIN_ASSIGN_DOCTOR", resource=f"Appt:{appointment.id}->Doc:{doctor.id}"))
     db.commit()
