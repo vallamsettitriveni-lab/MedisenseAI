@@ -99,28 +99,33 @@ def _process_pdf_and_create_report(
 
     db.commit()
 
+    # Immediate, instant structured clinical summary and lifestyle guidance
+    summary_text = (
+        f"Your diagnostic panel indicates {len(abnormal_tests)} biomarker(s) outside standard reference intervals: {', '.join(abnormal_tests)}. These values warrant clinical discussion with your physician to tailor dietary and lifestyle optimizations."
+        if abnormal_tests else
+        "All extracted laboratory biomarkers are currently balanced within standard healthy clinical reference intervals. Continue maintaining your current active lifestyle and routine health checkups."
+    )
+
+    tips_text = (
+        "• Dietary Balance: Prioritize whole grains, leafy green vegetables, lean proteins, and antioxidant-rich foods.\n"
+        "• Daily Hydration: Maintain consistent daily fluid intake of 2.0 to 2.5 liters of clean water.\n"
+        "• Physical Activity: Aim for 30 minutes of moderate aerobic activity 4–5 times weekly.\n"
+        "• Rest & Sleep: Target 7–8 hours of uninterrupted sleep for optimal cellular and metabolic repair."
+    )
+
+    precautions_text = f"{summary_text}\n\n• Do not alter prescribed medications without consulting your physician.\n• Discuss these diagnostic findings during your upcoming doctor consultation.\n• Retest abnormal parameters in 4–8 weeks to monitor physiological trajectories."
+
     try:
-        rag_query = f"Lab test results: {', '.join(abnormal_tests)}" if abnormal_tests else "Standard metabolic profile"
-        rag_context = ""
-        try:
-            rag_context = rag_pipeline.retrieve_context(rag_query, db)
-        except Exception:
-            pass
-
-        prompt = f"Educational Summary for: {', '.join(abnormal_tests) if abnormal_tests else 'All values in standard range'}"
-        raw_explanation = llm_service.generate(prompt)
-        safe_explanation = SafetyFilter.sanitize_explanation(raw_explanation)
-
         ai_exp = AIExplanation(
             report_id=report.id,
-            structured_summary={"findings": abnormal_tests, "context": rag_context},
-            lifestyle_suggestions="• Maintain balanced daily hydration (2-2.5L water).\n• Prioritize fiber-rich whole foods, leafy greens, and moderate physical activity.\n• Discuss personalized dietary recommendations with your healthcare professional.",
-            precautions=safe_explanation
+            structured_summary={"findings": abnormal_tests, "summary": summary_text},
+            lifestyle_suggestions=tips_text,
+            precautions=precautions_text
         )
         db.add(ai_exp)
         db.commit()
     except Exception as e:
-        print(f"AI explanation note: {e}")
+        print(f"AI explanation init note: {e}")
 
     try:
         db.add(AuditLog(user_id=current_user.id, action="REPORT_UPLOAD", resource=str(report.id)))

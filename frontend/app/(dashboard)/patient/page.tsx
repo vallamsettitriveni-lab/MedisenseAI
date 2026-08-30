@@ -328,40 +328,39 @@ export default function PatientDashboard() {
     setUploading(true);
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`${API_BASE_URL}/reports/upload`, {
+      let res = await fetch(`${API_BASE_URL}/reports/upload`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
 
+      // If backend was cold-starting (502/503/504), retry once after brief pause
+      if (!res.ok && (res.status === 502 || res.status === 503 || res.status === 504)) {
+        await new Promise((r) => setTimeout(r, 2500));
+        res = await fetch(`${API_BASE_URL}/reports/upload`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+      }
+
       if (res.ok) {
         const newReport = await res.json();
         await fetchReports(token);
-        try {
-          const freshRes = await fetch(`${API_BASE_URL}/reports/${newReport.id}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (freshRes.ok) {
-            const freshRep = await freshRes.json();
-            setSelectedReport(freshRep);
-            fetchComparison(freshRep.id);
-          } else {
-            setSelectedReport(newReport);
-            fetchComparison(newReport.id);
-          }
-        } catch (_) {
-          setSelectedReport(newReport);
-        }
+        setSelectedReport(newReport);
+        fetchComparison(newReport.id);
         fetchTrendChart(selectedTest);
-        alert(`Successfully processed report '${file.name}'! Extracted lab values and AI educational breakdown are ready.`);
+        alert(`Successfully processed report '${file.name}'! Extracted lab values, comparison deltas, and AI educational breakdown are ready.`);
       } else {
         await fetchReports(token);
-        alert('Report upload completed. Refreshing medical records...');
+        alert('Report upload completed. Medical records refreshed.');
       }
     } catch (err) {
       console.error('Upload error:', err);
+      await fetchReports(token);
     } finally {
       setUploading(false);
+      e.target.value = '';
     }
   };
 

@@ -137,32 +137,50 @@ class LabExtractor:
                         pass
 
         # -------------------------------------------------------------
-        # TIER 2: Comprehensive Clinical Alias Matching
+        # TIER 2: Comprehensive Clinical Alias Matching (Single & Multi-line)
         # -------------------------------------------------------------
         for canonical_name, spec in self.knowledge_base.items():
             if canonical_name in found_test_names or any(canonical_name.lower() == t.lower() for t in found_test_names):
                 continue
 
             for alias_pattern in spec["aliases"]:
-                # Match alias followed by numerical value and optional unit/range
-                full_pattern = rf'{alias_pattern}\b[^\d\n]*?(\d+(?:\.\d+)?)\s*([A-Za-z0-9\^\/\%\.\-]+)?'
-                match = re.search(full_pattern, text, re.IGNORECASE)
+                # Pattern A: Matches [Alias] followed optionally by sample/method metadata lines, then [Observed Value] [H/L] [Ref Min] - [Ref Max] [Unit]
+                full_multiline_pattern = (
+                    rf'{alias_pattern}(?:[^\n\d]*?\n(?:[^\n\d]*?\n)?|[^\d\n]*?)'
+                    r'(\d+(?:\.\d+)?)\s*(?:[HhLl])?\s+'
+                    r'(\d+(?:\.\d+)?)\s*[\-\–\sto]+\s*(\d+(?:\.\d+)?)\s*'
+                    r'([A-Za-z0-9\^\/\%\.\-µu]+)?'
+                )
+                match = re.search(full_multiline_pattern, text, re.IGNORECASE)
+                if match:
+                    try:
+                        val = float(match.group(1))
+                        ref_min = float(match.group(2))
+                        ref_max = float(match.group(3))
+                        unit = match.group(4).strip() if match.group(4) else spec["unit"]
+                        status = self.evaluate_status(val, ref_min, ref_max)
+                        extracted_results.append({
+                            "test_name": canonical_name,
+                            "value": val,
+                            "unit": unit,
+                            "reference_min": ref_min,
+                            "reference_max": ref_max,
+                            "status": status.value
+                        })
+                        found_test_names.add(canonical_name)
+                        break
+                    except (ValueError, IndexError):
+                        pass
+
+                # Pattern B: Simple [Alias] [Observed Value] [Unit]
+                simple_pattern = rf'{alias_pattern}\b[^\d\n]*?(\d+(?:\.\d+)?)\s*([A-Za-z0-9\^\/\%\.\-µu]+)?'
+                match = re.search(simple_pattern, text, re.IGNORECASE)
                 if match:
                     try:
                         val = float(match.group(1))
                         unit = spec["unit"]
                         ref_min = spec["min"]
                         ref_max = spec["max"]
-
-                        # Look for custom reference range in the same line/context
-                        line_match = re.search(rf'{alias_pattern}.*?(\d+(?:\.\d+)?)\s*[\-\–\sto]+\s*(\d+(?:\.\d+)?)', text, re.I)
-                        if line_match:
-                            try:
-                                ref_min = float(line_match.group(1))
-                                ref_max = float(line_match.group(2))
-                            except ValueError:
-                                pass
-
                         status = self.evaluate_status(val, ref_min, ref_max)
                         extracted_results.append({
                             "test_name": canonical_name,
