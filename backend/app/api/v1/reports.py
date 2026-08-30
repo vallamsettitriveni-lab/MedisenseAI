@@ -258,16 +258,17 @@ def compare_reports(
     new_report = db.query(Report).filter(Report.id == new_report_id).first()
     if not new_report:
         raise HTTPException(status_code=404, detail="New report not found.")
+    _ensure_report_has_lab_results(new_report, db)
 
     if not old_report_id:
         # Find the previous report for the same patient
         prev_report = db.query(Report).filter(
             Report.patient_id == new_report.patient_id,
-            Report.id != new_report_id,
-            Report.uploaded_at < new_report.uploaded_at
+            Report.id != new_report_id
         ).order_by(Report.uploaded_at.desc()).first()
         if prev_report:
             old_report_id = prev_report.id
+            _ensure_report_has_lab_results(prev_report, db)
 
     old_lab_dict = {}
     if old_report_id:
