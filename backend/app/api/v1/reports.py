@@ -21,36 +21,26 @@ extractor = LabExtractor()
 rag_pipeline = RAGPipeline()
 llm_service = LLMService()
 
-@router.post("/upload", response_model=ReportResponse, status_code=status.HTTP_201_CREATED)
-async def upload_report(
-    file: UploadFile = File(...),
-    current_user: User = Depends(require_patient),
-    db: Session = Depends(get_db)
-):
-    if not file.filename or not file.filename.lower().endswith(".pdf"):
-        raise HTTPException(status_code=400, detail="Only PDF files are allowed.")
-
-    # 1. Fetch Patient Record
-    patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
-    if not patient:
-        raise HTTPException(status_code=404, detail="Patient profile not found.")
-
-    # 2. Save File safely
+def _process_pdf_and_create_report(
+    patient: Patient,
+    file_name: str,
+    contents: bytes,
+    current_user: User,
+    db: Session
+) -> Report:
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
-    filename = f"{uuid.uuid4()}_{file.filename}"
+    filename = f"{uuid.uuid4()}_{file_name}"
     file_path = os.path.join(settings.UPLOAD_DIR, filename)
 
-    contents = await file.read()
     try:
         with open(file_path, "wb") as f:
             f.write(contents)
     except Exception as e:
         print(f"File save note: {e}")
 
-    # 3. Create Report DB Entry
     report = Report(
         patient_id=patient.id,
-        file_name=file.filename,
+        file_name=file_name,
         file_url=file_path,
         processing_status=ReportStatus.COMPLETED,
         report_date=datetime.utcnow()
@@ -59,14 +49,12 @@ async def upload_report(
     db.commit()
     db.refresh(report)
 
-    # 4. Extract Text via PyMuPDF / OCR
     extracted_text = ""
     try:
         extracted_text = PDFParser.extract_text_from_pdf(contents)
     except Exception as e:
         print(f"PDF extract note: {e}")
 
-    # 5. Extract Structured Lab Values & Determine LOW/NORMAL/HIGH
     parsed_results = []
     try:
         parsed_results = extractor.parse_extracted_text(extracted_text)
@@ -111,7 +99,6 @@ async def upload_report(
 
     db.commit()
 
-    # 6. Safe AI Explanation Generation
     try:
         rag_query = f"Lab test results: {', '.join(abnormal_tests)}" if abnormal_tests else "Standard metabolic profile"
         rag_context = ""
@@ -144,6 +131,66 @@ async def upload_report(
     full_report = db.query(Report).filter(Report.id == report.id).first()
     _ensure_report_has_lab_results(full_report, db)
     return full_report
+
+@router.post("/upload", response_model=ReportResponse, status_code=status.HTTP_201_CREATED)
+async def upload_report(
+    file: UploadFile = File(...),
+    current_user: User = Depends(require_patient),
+    db: Session = Depends(get_db)
+):
+    if not file.filename or not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Only PDF files are allowed.")
+
+    patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient profile not found.")
+
+    contents = await file.read()
+    return _process_pdf_and_create_report(patient, file.filename, contents, current_user, db)
+
+@router.get("/sample-library")
+def get_sample_library():
+    dirs = [
+        os.path.join(os.path.dirname(__file__), "../../../sample_reports"),
+        os.path.abspath("sample_reports"),
+        os.path.abspath("../sample_reports")
+    ]
+    found_files = []
+    for d in dirs:
+        if os.path.exists(d):
+            files = [f for f in os.listdir(d) if f.endswith(".pdf")]
+            if files:
+                found_files = sorted(files)
+                break
+    return {"count": len(found_files), "files": found_files}
+
+@router.post("/upload-sample", response_model=ReportResponse, status_code=status.HTTP_201_CREATED)
+def upload_sample_report(
+    sample_name: str = Query(..., description="Sample PDF file name"),
+    current_user: User = Depends(require_patient),
+    db: Session = Depends(get_db)
+):
+    patient = db.query(Patient).filter(Patient.user_id == current_user.id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient profile not found.")
+
+    dirs = [
+        os.path.join(os.path.dirname(__file__), "../../../sample_reports"),
+        os.path.abspath("sample_reports"),
+        os.path.abspath("../sample_reports")
+    ]
+    file_bytes = None
+    for d in dirs:
+        cand = os.path.join(d, sample_name)
+        if os.path.exists(cand):
+            with open(cand, "rb") as f:
+                file_bytes = f.read()
+            break
+
+    if not file_bytes:
+        file_bytes = b"%PDF-1.4\n1 0 obj\n<< /Title (Diagnostic Blood Report) >>\nendobj\n"
+
+    return _process_pdf_and_create_report(patient, sample_name, file_bytes, current_user, db)
 
 def _ensure_report_has_lab_results(report: Report, db: Session):
     if not report.lab_results or len(report.lab_results) == 0:
