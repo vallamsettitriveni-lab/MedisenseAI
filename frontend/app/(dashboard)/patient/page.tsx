@@ -108,12 +108,22 @@ export default function PatientDashboard() {
     return 'Patient';
   };
 
-  // Auto-fetch doctors whenever entering appointments or emergency tabs
+  // Auto-fetch data whenever switching tabs
   useEffect(() => {
     if (activeTab === 'appointments' || activeTab === 'emergency') {
       fetchDoctors();
+    } else if (activeTab === 'compare' && reports.length > 0) {
+      fetchComparison(selectedReport?.id || reports[0].id);
+    } else if (activeTab === 'trends') {
+      fetchTrendChart(selectedTest);
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'trends') {
+      fetchTrendChart(selectedTest);
+    }
+  }, [selectedTest]);
 
   // Strict Authentication & Profile Fetching
   useEffect(() => {
@@ -295,14 +305,14 @@ export default function PatientDashboard() {
 
       if (res.ok) {
         const newReport = await res.json();
+        await fetchReports(token);
         setSelectedReport(newReport);
-        setReports((prev) => [newReport, ...prev.filter((r) => r.id !== newReport.id)]);
         fetchComparison(newReport.id);
         fetchTrendChart(selectedTest);
         alert(`Successfully processed report '${file.name}'! Extracted lab values and AI educational breakdown are ready.`);
       } else {
-        alert('Report parsing completed with standard health indicators.');
-        fetchReports();
+        await fetchReports(token);
+        alert('Report upload completed. Refreshing medical records...');
       }
     } catch (err) {
       console.error('Upload error:', err);

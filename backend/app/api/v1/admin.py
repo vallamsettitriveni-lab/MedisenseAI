@@ -82,6 +82,30 @@ def assign_doctor_to_appointment(
 
     return {"message": f"Assigned doctor {doctor.full_name} to appointment successfully.", "status": appointment.status, "reason": appointment.reason}
 
+@router.patch("/appointments/{appointment_id}/approve")
+def approve_emergency_appointment(
+    appointment_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    appointment = db.query(Appointment).filter(Appointment.id == appointment_id).first()
+    if not appointment:
+        raise HTTPException(status_code=404, detail="Appointment not found.")
+
+    doctor = db.query(Doctor).filter(Doctor.id == appointment.doctor_id).first()
+    doc_name = doctor.full_name if doctor else "Specialist Doctor"
+
+    appointment.status = AppointmentStatus.APPROVED
+    current_reason = appointment.reason or ""
+    if f"[APPROVED_BY: Dr. {doc_name}]" not in current_reason:
+        appointment.reason = f"{current_reason} [APPROVED_BY: Dr. {doc_name}]".strip()
+
+    db.add(AuditLog(user_id=current_user.id, action="ADMIN_APPROVE_EMERGENCY", resource=str(appointment.id)))
+    db.commit()
+    db.refresh(appointment)
+
+    return {"message": f"Emergency appointment approved successfully for Dr. {doc_name}.", "status": appointment.status, "reason": appointment.reason}
+
 @router.post("/knowledge/upload", status_code=status.HTTP_201_CREATED)
 async def upload_knowledge_document(
     title: str,

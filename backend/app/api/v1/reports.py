@@ -80,20 +80,32 @@ async def upload_report(
         abnormal_tests = []
 
         for item in parsed_results:
+            status_val = item.get("status", "NORMAL")
+            if isinstance(status_val, str):
+                try:
+                    status_enum = LabStatus[status_val.upper()]
+                except KeyError:
+                    status_enum = LabStatus.NORMAL
+            else:
+                status_enum = status_val
+
             lab_res = LabResult(
                 report_id=report.id,
                 patient_id=patient.id,
                 test_name=item["test_name"],
-                value=item["value"],
+                value=float(item["value"]),
                 unit=item.get("unit", ""),
                 reference_min=item.get("reference_min"),
                 reference_max=item.get("reference_max"),
-                status=item.get("status", "NORMAL")
+                status=status_enum
             )
             db.add(lab_res)
             lab_result_entities.append(lab_res)
-            if item.get("status") in ["LOW", "HIGH"]:
-                abnormal_tests.append(f"{item['test_name']} ({item['value']} {item.get('unit', '')} - {item.get('status')})")
+            if status_enum in [LabStatus.LOW, LabStatus.HIGH]:
+                abnormal_tests.append(f"{lab_res.test_name} ({lab_res.value} {lab_res.unit} - {status_enum.value})")
+
+        # Commit lab results immediately so they are permanently saved
+        db.commit()
 
         # 6. RAG Context Retrieval & Fast LLM Explanation
         rag_query = f"Lab test results for patient: {', '.join(abnormal_tests)}" if abnormal_tests else "Normal blood count panel interpretation"
@@ -128,6 +140,7 @@ Provide a patient-friendly summary with questions for doctor.
 
     except Exception as e:
         print(f"Error processing report: {e}")
+        db.rollback()
         report.processing_status = ReportStatus.COMPLETED
         db.commit()
         db.refresh(report)

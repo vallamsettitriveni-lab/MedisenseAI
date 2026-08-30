@@ -215,6 +215,29 @@ export default function AdminDashboard() {
     }
   };
 
+  // Admin Direct Emergency Approval
+  const handleDirectApproveEmergencyCase = async (apptId: string) => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/appointments/${apptId}/approve`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        alert('Emergency appointment approved and confirmed successfully!');
+        fetchAppointments();
+      } else {
+        const err = await res.json();
+        alert(`Approval failed: ${err.detail}`);
+      }
+    } catch (e) {
+      console.error('Error approving emergency appointment:', e);
+    }
+  };
+
   // Ingest knowledge base document
   const handleIngestDocument = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -695,13 +718,21 @@ export default function AdminDashboard() {
                               ))}
                           </select>
 
-                          <button
-                            onClick={() => handleAssignEmergencyDoctor(app.id)}
-                            disabled={!selectedMatchDoctorId || assigningApptId !== app.id}
-                            className="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center justify-center gap-1.5 disabled:opacity-50"
-                          >
-                            <CheckCircle className="h-4 w-4" /> Reassign Doctor & Dispatch
-                          </button>
+                          <div className="space-y-2">
+                            <button
+                              onClick={() => handleAssignEmergencyDoctor(app.id)}
+                              disabled={!selectedMatchDoctorId || assigningApptId !== app.id}
+                              className="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center justify-center gap-1.5 disabled:opacity-50"
+                            >
+                              <CheckCircle className="h-4 w-4" /> Reassign Doctor & Dispatch
+                            </button>
+                            <button
+                              onClick={() => handleDirectApproveEmergencyCase(app.id)}
+                              className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition flex items-center justify-center gap-1.5"
+                            >
+                              <CheckCircle className="h-4 w-4" /> ⚡ Direct Approve & Confirm
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>
