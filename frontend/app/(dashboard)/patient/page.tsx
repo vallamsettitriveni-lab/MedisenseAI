@@ -150,7 +150,7 @@ export default function PatientDashboard() {
     fetchAppointments(token);
   }, []);
 
-  const fetchPatientProfile = async (authToken?: string) => {
+  const fetchPatientProfile = async (authToken?: string | null) => {
     const token = authToken || localStorage.getItem('token');
     try {
       const res = await fetch(`${API_BASE_URL}/patients/me`, {
@@ -213,7 +213,7 @@ export default function PatientDashboard() {
     }
   };
 
-  const fetchReports = async (authToken?: string) => {
+  const fetchReports = async (authToken?: string | null) => {
     const token = authToken || localStorage.getItem('token');
     try {
       const res = await fetch(`${API_BASE_URL}/reports/`, {
@@ -273,7 +273,7 @@ export default function PatientDashboard() {
     }
   };
 
-  const fetchAppointments = async (authToken?: string) => {
+  const fetchAppointments = async (authToken?: string | null) => {
     const token = authToken || localStorage.getItem('token');
     try {
       const res = await fetch(`${API_BASE_URL}/appointments/`, {
