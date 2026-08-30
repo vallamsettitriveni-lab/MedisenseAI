@@ -145,7 +145,10 @@ Provide a patient-friendly summary with questions for doctor.
         db.commit()
         db.refresh(report)
 
-    return report
+    # Re-query full report with eager relationships to ensure lab_results are returned
+    full_report = db.query(Report).filter(Report.id == report.id).first()
+    _ensure_report_has_lab_results(full_report, db)
+    return full_report
 
 def _ensure_report_has_lab_results(report: Report, db: Session):
     if not report.lab_results or len(report.lab_results) == 0:

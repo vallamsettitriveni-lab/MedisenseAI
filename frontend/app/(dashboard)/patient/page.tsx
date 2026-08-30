@@ -223,7 +223,15 @@ export default function PatientDashboard() {
         const data = await res.json();
         setReports(data);
         if (data.length > 0) {
-          setSelectedReport(data[0]);
+          setSelectedReport((prev: any) => {
+            if (prev) {
+              const matched = data.find((r: any) => r.id === prev.id);
+              if (matched && matched.lab_results && matched.lab_results.length > 0) {
+                return matched;
+              }
+            }
+            return data[0];
+          });
           fetchComparison(data[0].id);
         }
       }
@@ -287,6 +295,29 @@ export default function PatientDashboard() {
     }
   };
 
+  // Confirm / Accept Emergency Appointment directly
+  const handleConfirmEmergencyAppointment = async (apptId: string) => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${API_BASE_URL}/appointments/${apptId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: 'APPROVED' }),
+      });
+      if (res.ok) {
+        alert('✅ Emergency consultation confirmed and finalized!');
+        fetchAppointments(token);
+      } else {
+        alert('Could not update appointment status.');
+      }
+    } catch (e) {
+      console.error('Error confirming emergency appointment:', e);
+    }
+  };
+
   // Upload Lab PDF
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
@@ -306,8 +337,21 @@ export default function PatientDashboard() {
       if (res.ok) {
         const newReport = await res.json();
         await fetchReports(token);
-        setSelectedReport(newReport);
-        fetchComparison(newReport.id);
+        try {
+          const freshRes = await fetch(`${API_BASE_URL}/reports/${newReport.id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (freshRes.ok) {
+            const freshRep = await freshRes.json();
+            setSelectedReport(freshRep);
+            fetchComparison(freshRep.id);
+          } else {
+            setSelectedReport(newReport);
+            fetchComparison(newReport.id);
+          }
+        } catch (_) {
+          setSelectedReport(newReport);
+        }
         fetchTrendChart(selectedTest);
         alert(`Successfully processed report '${file.name}'! Extracted lab values and AI educational breakdown are ready.`);
       } else {
@@ -1025,6 +1069,17 @@ startxref
                             <p className="text-xs text-slate-700 italic bg-white/80 p-2.5 rounded-xl border border-slate-200">
                               Symptoms: "{app.reason.replace(/\[EMERGENCY\]|\[ADMIN_ASSIGNED:[^\]]+\]|\[APPROVED_BY:[^\]]+\]/g, '').trim()}"
                             </p>
+                          )}
+
+                          {!isApproved && (
+                            <div className="pt-2 flex items-center gap-2">
+                              <button
+                                onClick={() => handleConfirmEmergencyAppointment(app.id)}
+                                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-sm transition inline-flex items-center gap-1.5"
+                              >
+                                <CheckCircle className="h-3.5 w-3.5" /> ⚡ Accept & Confirm Dr. {app.doctor_name}
+                              </button>
+                            </div>
                           )}
                         </div>
                       );
