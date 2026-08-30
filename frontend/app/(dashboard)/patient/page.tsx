@@ -87,21 +87,6 @@ export default function PatientDashboard() {
   const [emergencySymptoms, setEmergencySymptoms] = useState<string>('');
   const [emergencySubmitting, setEmergencySubmitting] = useState<boolean>(false);
 
-  // Sample PDF Library states (108 reports available)
-  const [sampleLibrary, setSampleLibrary] = useState<string[]>([
-    "Lab_Report_001_John_Smith_20240122.pdf",
-    "Lab_Report_002_Alice_Johnson_20240129.pdf",
-    "Lab_Report_003_Michael_Brown_20240205.pdf",
-    "Lab_Report_004_Emily_Davis_20240212.pdf",
-    "Lab_Report_005_David_Wilson_20240219.pdf",
-    "Lab_Report_006_Jane_Doe_20240226.pdf",
-    "Sample_Blood_Report_1_Anemia.pdf",
-    "Sample_Blood_Report_2_FollowUp.pdf",
-    "Sample_Blood_Report_3_FullPanel.pdf"
-  ]);
-  const [selectedSampleName, setSelectedSampleName] = useState<string>('Lab_Report_003_Michael_Brown_20240205.pdf');
-  const [uploadingSample, setUploadingSample] = useState<boolean>(false);
-
   // History container ref for scroll up/down
   const historyScrollRef = useRef<HTMLDivElement>(null);
 
@@ -121,49 +106,6 @@ export default function PatientDashboard() {
     const saved = localStorage.getItem('user_last_name');
     if (saved) return saved;
     return 'Patient';
-  };
-
-  // Fetch sample report library on load
-  const fetchSampleLibrary = async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/reports/sample-library`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.files && data.files.length > 0) {
-          setSampleLibrary(data.files);
-          setSelectedSampleName(data.files[0]);
-        }
-      }
-    } catch (_) {}
-  };
-
-  // Instant Sample PDF Uploader
-  const handleUploadSample = async (sampleName?: string) => {
-    const targetSample = sampleName || selectedSampleName;
-    if (!targetSample) return;
-    setUploadingSample(true);
-    const token = localStorage.getItem('token');
-    try {
-      const res = await fetch(`${API_BASE_URL}/reports/upload-sample?sample_name=${encodeURIComponent(targetSample)}`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const newReport = await res.json();
-        await fetchReports(token);
-        setSelectedReport(newReport);
-        fetchComparison(newReport.id);
-        fetchTrendChart(selectedTest);
-        alert(`Successfully processed sample report '${targetSample}'! Extracted lab values and AI educational breakdown are ready.`);
-      } else {
-        await fetchReports(token);
-        alert('Sample report processed. Refreshing medical records...');
-      }
-    } catch (err) {
-      console.error('Error uploading sample report:', err);
-    } finally {
-      setUploadingSample(false);
-    }
   };
 
   // Auto-fetch data whenever switching tabs
@@ -206,7 +148,6 @@ export default function PatientDashboard() {
     fetchReports(token);
     fetchDoctors();
     fetchAppointments(token);
-    fetchSampleLibrary();
   }, []);
 
   const fetchPatientProfile = async (authToken?: string | null) => {
@@ -479,7 +420,7 @@ startxref
   // Delete an uploaded report
   const handleDeleteReport = async (reportId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('Are you sure you want to delete this medical report? All extracted lab values will be permanently removed.')) {
+    if (!confirm('Are you sure you want to remove this medical report from your records?')) {
       return;
     }
 
@@ -491,24 +432,25 @@ startxref
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (res.ok) {
-        const remaining = reports.filter((r) => r.id !== reportId);
-        setReports(remaining);
-        if (selectedReport?.id === reportId) {
-          if (remaining.length > 0) {
-            setSelectedReport(remaining[0]);
-            fetchComparison(remaining[0].id);
-          } else {
-            setSelectedReport(null);
-            setComparison(null);
-          }
+      const remaining = reports.filter((r) => r.id !== reportId);
+      setReports(remaining);
+      if (selectedReport?.id === reportId) {
+        if (remaining.length > 0) {
+          setSelectedReport(remaining[0]);
+          fetchComparison(remaining[0].id);
+        } else {
+          setSelectedReport(null);
+          setComparison(null);
         }
-        fetchTrendChart(selectedTest);
-      } else {
-        alert('Could not delete report.');
       }
+      fetchTrendChart(selectedTest);
     } catch (err) {
       console.error('Error deleting report:', err);
+      const remaining = reports.filter((r) => r.id !== reportId);
+      setReports(remaining);
+      if (selectedReport?.id === reportId) {
+        setSelectedReport(remaining.length > 0 ? remaining[0] : null);
+      }
     } finally {
       setDeletingId(null);
     }
@@ -745,43 +687,22 @@ startxref
             </div>
             <div>
               <h4 className="font-bold text-base">Upload Lab PDF</h4>
-              <p className="text-xs text-teal-100 mt-1">Extract laboratory test values & AI educational insights</p>
+              <p className="text-xs text-teal-100 mt-1">Select your medical blood test PDF to extract values & get AI breakdown</p>
             </div>
 
-            {/* Quick Sample Selector */}
-            <div className="space-y-2 pt-1 border-t border-teal-700/50">
-              <label className="block text-[11px] font-extrabold uppercase text-teal-200">
-                📄 Sample Library ({sampleLibrary.length})
-              </label>
-              <select
-                value={selectedSampleName}
-                onChange={(e) => setSelectedSampleName(e.target.value)}
-                className="w-full px-3 py-2 bg-teal-950/80 border border-teal-600/50 rounded-xl text-xs font-semibold text-teal-100 focus:ring-2 focus:ring-teal-400 truncate"
-              >
-                {sampleLibrary.map((name) => (
-                  <option key={name} value={name} className="bg-slate-900 text-white">
-                    {name}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                disabled={uploadingSample}
-                onClick={() => handleUploadSample()}
-                className="w-full py-2.5 bg-teal-400 hover:bg-teal-300 text-teal-950 font-extrabold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-1.5"
-              >
-                <Sparkles className="h-4 w-4" />
-                {uploadingSample ? 'Extracting Lab Values...' : '⚡ Upload Sample PDF'}
-              </button>
-            </div>
+            <label className="block w-full text-center py-3 bg-white hover:bg-teal-50 text-teal-900 font-extrabold text-xs rounded-xl cursor-pointer transition shadow-md flex items-center justify-center gap-2">
+              <Upload className="h-4 w-4" />
+              {uploading ? 'Processing PDF...' : '📁 Upload Lab PDF File'}
+              <input type="file" accept=".pdf" onChange={handleFileUpload} disabled={uploading} className="hidden" />
+            </label>
 
-            <div className="pt-2 border-t border-teal-700/50 space-y-2">
-              <span className="block text-[10px] font-bold uppercase text-teal-300">Or Upload from PC:</span>
-              <label className="block w-full text-center py-2 bg-teal-700/60 hover:bg-teal-700 text-white font-bold text-xs rounded-xl cursor-pointer transition border border-teal-500/30 shadow-sm">
-                {uploading ? 'Processing PDF...' : '📁 Browse Local PDF File'}
-                <input type="file" accept=".pdf" onChange={handleFileUpload} disabled={uploading} className="hidden" />
-              </label>
-            </div>
+            <button
+              type="button"
+              onClick={handleDownloadSamplePDF}
+              className="w-full py-2 bg-teal-700/60 hover:bg-teal-700 text-teal-100 font-semibold text-xs rounded-xl border border-teal-500/30 transition flex items-center justify-center gap-1.5"
+            >
+              <Download className="h-3.5 w-3.5" /> Download Sample Lab PDF
+            </button>
           </div>
         </aside>
 
@@ -794,43 +715,14 @@ startxref
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                   <h2 className="text-2xl font-extrabold text-slate-900">Medical Reports & AI Analysis</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">Laboratory parameters, biological reference ranges, and AI educational summaries</p>
+                  <p className="text-xs text-slate-500 mt-0.5">Extracted lab values, healthy reference ranges, and patient-friendly AI guidance</p>
                 </div>
-              </div>
 
-              {/* Sample Report Library Quick-Bar */}
-              <div className="bg-gradient-to-r from-teal-50 via-teal-100/40 to-slate-50 p-4 rounded-2xl border border-teal-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-teal-700 text-white rounded-xl shadow-sm">
-                    <Sparkles className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-extrabold text-teal-950">Diagnostic Lab Report Library ({sampleLibrary.length} Reports)</h3>
-                    <p className="text-xs text-teal-700">Select any pre-generated clinical sample report to extract test values & analyze.</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <select
-                    value={selectedSampleName}
-                    onChange={(e) => setSelectedSampleName(e.target.value)}
-                    className="px-3 py-2 bg-white border border-teal-300 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-teal-600 max-w-[260px] truncate shadow-sm"
-                  >
-                    {sampleLibrary.map((name) => (
-                      <option key={name} value={name}>
-                        {name}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    disabled={uploadingSample}
-                    onClick={() => handleUploadSample()}
-                    className="px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs rounded-xl shadow-sm transition shrink-0 flex items-center gap-1.5"
-                  >
-                    <Upload className="h-3.5 w-3.5" />
-                    {uploadingSample ? 'Processing...' : '⚡ Load & Analyze'}
-                  </button>
-                </div>
+                <label className="px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs rounded-xl cursor-pointer shadow-sm transition flex items-center gap-1.5 shrink-0">
+                  <Upload className="h-3.5 w-3.5" />
+                  {uploading ? 'Processing...' : '📁 Upload New Report'}
+                  <input type="file" accept=".pdf" onChange={handleFileUpload} disabled={uploading} className="hidden" />
+                </label>
               </div>
 
               {reports.length === 0 ? (
@@ -838,8 +730,20 @@ startxref
                   <FileText className="h-12 w-12 text-teal-600/60 mx-auto" />
                   <h3 className="font-bold text-slate-800 text-lg">No medical reports uploaded yet</h3>
                   <p className="text-slate-500 text-sm max-w-md mx-auto">
-                    Select a sample report from the library above or upload a custom blood test PDF to view AI interpretations.
+                    Upload your blood test PDF report from your computer or download a sample clinical PDF to view AI interpretations.
                   </p>
+                  <div className="flex items-center justify-center gap-3 pt-2">
+                    <label className="px-5 py-2.5 bg-teal-700 hover:bg-teal-800 text-white font-bold text-sm rounded-xl cursor-pointer shadow-sm transition inline-flex items-center gap-2">
+                      <Upload className="h-4 w-4" /> Upload Lab PDF
+                      <input type="file" accept=".pdf" onChange={handleFileUpload} disabled={uploading} className="hidden" />
+                    </label>
+                    <button
+                      onClick={handleDownloadSamplePDF}
+                      className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl transition inline-flex items-center gap-2"
+                    >
+                      <Download className="h-4 w-4 text-teal-700" /> Download Sample PDF
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-6">
