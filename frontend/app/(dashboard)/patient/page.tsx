@@ -897,36 +897,123 @@ startxref
 
                   </div>
 
-                  {/* BOTTOM ROW: AI Educational Summary & Guidance */}
-                  {selectedReport && selectedReport.ai_explanation && (
-                    <div className="bg-white p-6 rounded-2xl border border-teal-200 shadow-sm space-y-5">
-                      <div className="flex items-center gap-2 text-teal-800 font-bold border-b border-slate-100 pb-3">
-                        <Sparkles className="h-5 w-5 text-teal-600" />
-                        <h3 className="text-lg">AI Educational Summary & Guidance</h3>
-                      </div>
-
-                      <div className="p-4 bg-teal-50/40 rounded-xl text-sm leading-relaxed text-slate-700 whitespace-pre-line border border-teal-100">
-                        {selectedReport.ai_explanation.precautions}
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="p-4 bg-emerald-50/60 rounded-xl border border-emerald-100 space-y-2">
-                          <div className="flex items-center gap-2 text-emerald-800 font-bold text-sm">
-                            <Apple className="h-4 w-4" /> Nutrition & Lifestyle Recommendations
+                  {/* BOTTOM ROW: AI Clinical Summary, Tips, Precautions & Guidance */}
+                  {selectedReport && (
+                    <div className="bg-white p-6 sm:p-8 rounded-3xl border border-teal-200 shadow-sm space-y-6">
+                      {/* Section Header with Real-time Metrics */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-3 bg-gradient-to-br from-teal-600 to-teal-800 text-white rounded-2xl shadow-sm">
+                            <Sparkles className="h-6 w-6" />
                           </div>
-                          <p className="text-xs text-slate-600 whitespace-pre-line leading-relaxed">
-                            {selectedReport.ai_explanation.lifestyle_suggestions}
-                          </p>
+                          <div>
+                            <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                              AI Clinical Summary & Health Interpretation
+                            </h3>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              Automated educational synthesis of <span className="font-bold text-teal-700">{selectedReport.file_name}</span>
+                            </p>
+                          </div>
                         </div>
 
-                        <div className="p-4 bg-amber-50/60 rounded-xl border border-amber-100 space-y-2">
-                          <div className="flex items-center gap-2 text-amber-800 font-bold text-sm">
-                            <ShieldAlert className="h-4 w-4" /> Medical Disclaimer
+                        {/* Dynamic Biomarker Metrics Counter */}
+                        {selectedReport.lab_results && selectedReport.lab_results.length > 0 && (
+                          <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-200 text-xs">
+                            <span className="px-2.5 py-1 rounded-xl bg-emerald-100 text-emerald-800 font-bold">
+                              ✓ {selectedReport.lab_results.filter((l: any) => l.status === 'NORMAL').length} Normal
+                            </span>
+                            {selectedReport.lab_results.filter((l: any) => l.status === 'LOW').length > 0 && (
+                              <span className="px-2.5 py-1 rounded-xl bg-amber-100 text-amber-800 font-bold">
+                                ▼ {selectedReport.lab_results.filter((l: any) => l.status === 'LOW').length} Low
+                              </span>
+                            )}
+                            {selectedReport.lab_results.filter((l: any) => l.status === 'HIGH').length > 0 && (
+                              <span className="px-2.5 py-1 rounded-xl bg-rose-100 text-rose-800 font-bold">
+                                ▲ {selectedReport.lab_results.filter((l: any) => l.status === 'HIGH').length} High
+                              </span>
+                            )}
                           </div>
-                          <p className="text-xs text-slate-600 leading-relaxed">
-                            MediSense AI provides educational interpretations for patient awareness. It does not replace clinical diagnoses. Always review these results with your healthcare physician.
-                          </p>
+                        )}
+                      </div>
+
+                      {/* Primary Diagnostic Findings Box */}
+                      <div className="p-5 bg-gradient-to-br from-teal-50/70 to-emerald-50/30 rounded-2xl border border-teal-100/80 space-y-2">
+                        <div className="flex items-center gap-2 text-teal-900 font-extrabold text-sm">
+                          <Stethoscope className="h-4 w-4 text-teal-700" />
+                          Diagnostic Findings Overview
                         </div>
+                        <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+                          {selectedReport.ai_explanation?.precautions ||
+                            (selectedReport.lab_results?.some((l: any) => l.status !== 'NORMAL')
+                              ? `Your diagnostic panel indicates ${selectedReport.lab_results.filter((l: any) => l.status !== 'NORMAL').map((l: any) => `${l.test_name} (${l.value} ${l.unit} - ${l.status})`).join(', ')}. These biomarker values warrant clinical discussion with your doctor to tailor dietary and lifestyle optimizations.`
+                              : 'All analyzed laboratory biomarkers are currently balanced within standard healthy clinical reference intervals. Continue maintaining your current active lifestyle and routine health checkups.')}
+                        </p>
+                      </div>
+
+                      {/* 3-Column Grid: Nutrition & Lifestyle Tips | Medical Precautions | Questions for Doctor */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        {/* Box 1: Nutrition & Lifestyle Recommendations */}
+                        <div className="p-5 bg-emerald-50/60 rounded-2xl border border-emerald-200/70 flex flex-col justify-between space-y-3">
+                          <div className="space-y-2.5">
+                            <div className="flex items-center gap-2 text-emerald-900 font-extrabold text-xs uppercase tracking-wider">
+                              <Apple className="h-4 w-4 text-emerald-700" /> Nutrition & Lifestyle Tips
+                            </div>
+                            <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-line">
+                              {selectedReport.ai_explanation?.lifestyle_suggestions ||
+                                `• Balanced Nutrition: Emphasize antioxidant-rich leafy greens, fiber, and lean protein.\n• Daily Hydration: Target 2.0–2.5L of water daily to support metabolic clearance.\n• Active Movement: Aim for 30 minutes of moderate aerobic activity 4–5 times per week.\n• Sleep Hygiene: Ensure 7–8 hours of uninterrupted sleep for optimal cellular recovery.`}
+                            </p>
+                          </div>
+                          <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-100/70 px-2 py-1 rounded-lg w-fit">
+                            🌱 Evidence-based Wellness
+                          </span>
+                        </div>
+
+                        {/* Box 2: Important Precautions & Warning Signs */}
+                        <div className="p-5 bg-amber-50/60 rounded-2xl border border-amber-200/70 flex flex-col justify-between space-y-3">
+                          <div className="space-y-2.5">
+                            <div className="flex items-center gap-2 text-amber-900 font-extrabold text-xs uppercase tracking-wider">
+                              <ShieldAlert className="h-4 w-4 text-amber-700" /> Important Precautions
+                            </div>
+                            <ul className="text-xs text-slate-700 leading-relaxed space-y-1.5 list-disc list-inside">
+                              <li>Do not alter or discontinue prescribed medications without consulting your physician.</li>
+                              <li>Avoid starting high-dose over-the-counter supplements without clinical blood review.</li>
+                              <li>Retest abnormal parameters in 4–8 weeks to monitor physiological trajectories.</li>
+                              <li>Seek immediate emergency care if you experience acute chest tightness or sudden dizziness.</li>
+                            </ul>
+                          </div>
+                          <span className="text-[10px] text-amber-700 font-semibold bg-amber-100/70 px-2 py-1 rounded-lg w-fit">
+                            🛡️ Preventive Safety Protocol
+                          </span>
+                        </div>
+
+                        {/* Box 3: Questions to Ask Your Doctor */}
+                        <div className="p-5 bg-indigo-50/60 rounded-2xl border border-indigo-200/70 flex flex-col justify-between space-y-3">
+                          <div className="space-y-2.5">
+                            <div className="flex items-center gap-2 text-indigo-900 font-extrabold text-xs uppercase tracking-wider">
+                              <CheckCircle className="h-4 w-4 text-indigo-700" /> Questions for Your Doctor
+                            </div>
+                            <ul className="text-xs text-slate-700 leading-relaxed space-y-1.5 list-disc list-inside">
+                              <li>"How do these specific results compare to my historical health baseline?"</li>
+                              <li>"Are any targeted dietary modifications recommended for my out-of-range values?"</li>
+                              <li>"Would you recommend a follow-up panel in 3 to 6 months?"</li>
+                              <li>"Are there any specific lifestyle symptoms I should monitor closely at home?"</li>
+                            </ul>
+                          </div>
+                          <button
+                            onClick={() => setActiveTab('appointments')}
+                            className="text-[10px] text-indigo-700 font-bold bg-indigo-100/80 hover:bg-indigo-200 px-3 py-1.5 rounded-lg w-fit transition flex items-center gap-1"
+                          >
+                            Book Consultation <ArrowRight className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Medical Disclaimer Banner */}
+                      <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 flex items-start gap-2.5 text-[11px] text-slate-500 leading-relaxed">
+                        <ShieldAlert className="h-4 w-4 text-slate-400 shrink-0 mt-0.5" />
+                        <span>
+                          <strong>Medical Disclaimer:</strong> MediSense AI synthesizes educational laboratory summaries for patient literacy. These insights do not constitute medical diagnoses or prescriptive advice. Always review all diagnostic findings with a licensed healthcare professional.
+                        </span>
                       </div>
                     </div>
                   )}

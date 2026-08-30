@@ -237,6 +237,37 @@ def _ensure_report_has_lab_results(report: Report, db: Session):
         db.commit()
         db.refresh(report)
 
+    # Ensure AI Explanation is present
+    if not report.ai_explanation:
+        abnormal = []
+        for lab in (report.lab_results or []):
+            if lab.status in [LabStatus.LOW, LabStatus.HIGH]:
+                abnormal.append(f"{lab.test_name} ({lab.value} {lab.unit} - {lab.status.value})")
+
+        summary_text = (
+            f"Your clinical panel shows {len(abnormal)} biomarker(s) outside standard range: {', '.join(abnormal)}. These values warrant clinical discussion with your doctor to tailor dietary and lifestyle optimizations."
+            if abnormal else
+            "All analyzed laboratory biomarkers are currently balanced within standard healthy clinical reference intervals. Continue maintaining your current active lifestyle and routine health checkups."
+        )
+
+        tips_text = (
+            "• Dietary Balance: Prioritize whole grains, leafy green vegetables, lean proteins, and antioxidant-rich foods.\n"
+            "• Hydration: Maintain consistent daily fluid intake of 2.0 to 2.5 liters of water.\n"
+            "• Physical Activity: Aim for 30 minutes of moderate aerobic activity 4–5 times weekly.\n"
+            "• Rest & Sleep: Target 7–8 hours of uninterrupted sleep for metabolic and cellular recovery."
+        )
+
+        precautions_text = f"{summary_text}\n\n• Do not alter prescribed medications without consulting your physician.\n• Discuss these diagnostic findings during your upcoming doctor consultation.\n• Retest abnormal parameters in 4–8 weeks to monitor physiological trajectories."
+
+        db.add(AIExplanation(
+            report_id=report.id,
+            structured_summary={"findings": abnormal, "summary": summary_text},
+            lifestyle_suggestions=tips_text,
+            precautions=precautions_text
+        ))
+        db.commit()
+        db.refresh(report)
+
 @router.get("/", response_model=List[ReportResponse])
 def get_patient_reports(
     current_user: User = Depends(get_current_user),
